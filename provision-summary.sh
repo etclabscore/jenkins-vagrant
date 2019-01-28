@@ -8,8 +8,6 @@ source /vagrant/jenkins-cli.sh
 # show install summary.
 
 systemctl status jenkins
-jcli version
-jcli list-plugins | sort
 jgroovy = <<'EOF'
 import hudson.model.AbstractItem
 import hudson.model.User
@@ -27,6 +25,11 @@ Jenkins.instance.getAllItems(AbstractItem.class).sort { it.fullName }.each {
     println sprintf("jenkins job: %s (%s)", it.fullName, it.class)
 }
 EOF
+
+echo "================================================================"
+echo ""
 echo "jenkins is installed at https://$domain"
 echo "the admin password is $(cat /var/lib/jenkins/secrets/initialAdminPassword)"
 echo "you can also use the vagrant user with the vagrant password"
+echo ""
+echo "================================================================"
