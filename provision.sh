@@ -3,14 +3,6 @@ set -eux
 
 domain=$(hostname --fqdn)
 
-# use the local Jenkins user database.
-config_authentication='jenkins'
-# OR use LDAP.
-# NB this assumes you are running the Active Directory from https://github.com/rgl/windows-domain-controller-vagrant.
-# NB AND you must manually copy its tmp/ExampleEnterpriseRootCA.der file to this environment tmp/ directory.
-#config_authentication='ldap'
-
-
 echo 'Defaults env_keep += "DEBIAN_FRONTEND"' >/etc/sudoers.d/env_keep_apt
 chmod 440 /etc/sudoers.d/env_keep_apt
 export DEBIAN_FRONTEND=noninteractive
@@ -77,7 +69,6 @@ tail -f /var/log/jenkins/access.log | grep -v ajax
 cat /var/lib/jenkins/secrets/initialAdminPassword
 cd /var/lib/jenkins
 netstat -antp
-jcli version
 sudo -sHu jenkins
 EOF
 
@@ -174,8 +165,12 @@ server {
     ssl_ciphers EECDH+CHACHA20:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!aNULL:!MD5;
     add_header Strict-Transport-Security "max-age=31536000; includeSubdomains";
 
+    # workaround for https://issues.jenkins-ci.org/browse/JENKINS-45651
+    add_header 'X-SSH-Endpoint' 'jenkins.example.com:50022' always;
+
     access_log /var/log/nginx/$domain-access.log;
     error_log /var/log/nginx/$domain-error.log;
+
 
     # uncomment the following to debug errors and rewrites.
     #error_log /var/log/nginx/$domain-error.log debug;
@@ -233,6 +228,7 @@ sed -i -E 's,^(\s*assistive_technologies\s*=.*),#\1,' /etc/java-8-openjdk/access
 
 #
 # install Jenkins.
+# TODO: lock down to specific version of jenkins
 
 wget -qO- https://pkg.jenkins.io/debian-stable/jenkins.io.key | apt-key add -
 echo 'deb http://pkg.jenkins.io/debian-stable binary/' >/etc/apt/sources.list.d/jenkins.list
@@ -449,7 +445,6 @@ source /vagrant/jenkins-cli.sh
 
 # show which user is actually being used in jcli. this should show "vagrant".
 # see http://javadoc.jenkins-ci.org/hudson/model/User.html
-jcli who-am-i
 jgroovy = <<'EOF'
 import hudson.model.User
 
@@ -458,134 +453,6 @@ println sprintf("User id: %s", u.id)
 println sprintf("User Full Name: %s", u.fullName)
 u.allProperties.each { println sprintf("User property: %s", it) }; null
 EOF
-
-# use LDAP for user authentication (when enabled).
-# NB this assumes you are running the Active Directory from https://github.com/rgl/windows-domain-controller-vagrant.
-# see https://wiki.jenkins-ci.org/display/JENKINS/LDAP+Plugin
-# see https://github.com/jenkinsci/ldap-plugin/blob/b0b86221a898ecbd95c005ceda57a67533833314/src/main/java/hudson/security/LDAPSecurityRealm.java#L480
-if [ "$config_authentication" = 'ldap' ]; then
-echo '192.168.56.2 dc.example.com' >>/etc/hosts
-openssl x509 -inform der -in /vagrant/tmp/ExampleEnterpriseRootCA.der -out /usr/local/share/ca-certificates/ExampleEnterpriseRootCA.crt
-update-ca-certificates # NB this also updates the default java key store at /etc/ssl/certs/java/cacerts.
-jgroovy = <<'EOF'
-import jenkins.model.Jenkins
-import jenkins.security.plugins.ldap.FromUserRecordLDAPGroupMembershipStrategy
-import jenkins.security.plugins.ldap.FromGroupSearchLDAPGroupMembershipStrategy
-import hudson.security.LDAPSecurityRealm
-import hudson.util.Secret
-
-Jenkins.instance.securityRealm = new LDAPSecurityRealm(
-    // String server:
-    // TIP use the ldap: scheme and wireshark on the dc.example.com machine to troubeshoot.
-    'ldaps://dc.example.com',
-
-    // String rootDN:
-    'DC=example,DC=com',
-
-    // String userSearchBase:
-    // NB this is relative to rootDN.
-    'CN=Users',
-
-    // String userSearch:
-    // NB this is used to determine that a user exists.
-    // NB {0} is replaced with the username.
-    '(&(sAMAccountName={0})(objectClass=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))',
-
-    // String groupSearchBase:
-    // NB this is relative to rootDN.
-    'CN=Users',
-
-    // String groupSearchFilter:
-    // NB this is used to determine that a group exists.
-    // NB the search is scoped to groupSearchBase.
-    // NB {0} is replaced with the groupname.
-    '(&(objectCategory=group)(sAMAccountName={0}))',
-
-    // LDAPGroupMembershipStrategy groupMembershipStrategy:
-    // NB this is used to determine a user groups.
-    // Default: (|(member={0})(uniqueMember={0})(memberUid={1}))
-    // NB the search is scoped to groupSearchBase.
-    // NB {0} is replaced with the user DN.
-    // NB {1} is replaced with the username.
-    new FromGroupSearchLDAPGroupMembershipStrategy('(&(objectCategory=group)(member={0}))'),
-    //new FromUserRecordLDAPGroupMembershipStrategy('memberOf'),
-
-    // String managerDN:
-    'jane.doe@example.com',
-
-    // Secret managerPasswordSecret:
-    Secret.fromString('HeyH0Password'),
-
-    // boolean inhibitInferRootDN:
-    false,
-
-    // boolean disableMailAddressResolver:
-    false,
-
-    // CacheConfiguration cache:
-    null,
-
-    // EnvironmentProperty[] environmentProperties:
-    null,
-
-    // String displayNameAttributeName:
-    'displayName',
-
-    // String mailAddressAttributeName:
-    'mail',
-
-    // IdStrategy userIdStrategy:
-    null,
-
-    // IdStrategy groupIdStrategy:
-    null)
-
-Jenkins.instance.save()
-EOF
-# verify that we can resolve an LDAP user and group.
-# see http://javadoc.jenkins-ci.org/hudson/security/SecurityRealm.html
-# see http://javadoc.jenkins-ci.org/hudson/security/GroupDetails.html
-jgroovy = <<'EOF'
-import jenkins.model.Jenkins
-
-// resolve a user.
-// NB u is-a org.acegisecurity.userdetails.ldap.LdapUserDetailsImpl.
-u = Jenkins.instance.securityRealm.loadUserByUsername("vagrant")
-u.authorities.sort().each { println sprintf("LDAP user %s authority: %s", u.username, it) }
-
-// resolve a group.
-// NB g is-a hudson.security.LDAPSecurityRealm$GroupDetailsImpl.
-g = Jenkins.instance.securityRealm.loadGroupByGroupname("Enterprise Admins")
-println sprintf("LDAP group: %s", g.name)
-EOF
-fi
-
-# create example accounts (when using jenkins authentication).
-# see http://javadoc.jenkins-ci.org/hudson/model/User.html
-# see http://javadoc.jenkins-ci.org/hudson/security/HudsonPrivateSecurityRealm.html
-# see https://github.com/jenkinsci/mailer-plugin/blob/master/src/main/java/hudson/tasks/Mailer.java
-if [ "$config_authentication" = 'jenkins' ]; then
-jgroovy = <<'EOF'
-import jenkins.model.Jenkins
-import hudson.tasks.Mailer
-
-[
-    [id: "alice.doe",   fullName: "Alice Doe"],
-    [id: "bob.doe",     fullName: "Bob Doe"  ],
-    [id: "carol.doe",   fullName: "Carol Doe"],
-    [id: "dave.doe",    fullName: "Dave Doe" ],
-    [id: "eve.doe",     fullName: "Eve Doe"  ],
-    [id: "frank.doe",   fullName: "Frank Doe"],
-    [id: "grace.doe",   fullName: "Grace Doe"],
-    [id: "henry.doe",   fullName: "Henry Doe"],
-].each {
-    u = Jenkins.instance.securityRealm.createAccount(it.id, "password")
-    u.fullName = it.fullName
-    u.addProperty(new Mailer.UserProperty(it.id+"@example.com"))
-    u.save()
-}
-EOF
-fi
 
 
 #

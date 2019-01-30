@@ -11,12 +11,10 @@ config_windows_ip   = '10.10.10.102'
 config_macos_fqdn   = "macos.#{config_jenkins_fqdn}"
 config_macos_ip     = '10.10.10.103'
 
-# link to the gitlab-vagrant environment.
-config_gitlab_fqdn  = 'gitlab.example.com'
-config_gitlab_ip    = '10.10.9.99'
 
 Vagrant.configure('2') do |config|
-  config.vm.box = 'ubuntu-18.04-amd64'
+  config.vagrant.plugins = ["vagrant-reload", "vagrant-vbguest"]
+  config.vm.box = 'geerlingguy/ubuntu1804'
 
   config.vm.provider :libvirt do |lv, config|
     lv.memory = 2048
@@ -41,11 +39,9 @@ Vagrant.configure('2') do |config|
     config.vm.provision :shell, inline: "echo '#{config_ubuntu_ip} #{config_ubuntu_fqdn}' >>/etc/hosts"
     config.vm.provision :shell, inline: "echo '#{config_windows_ip} #{config_windows_fqdn}' >>/etc/hosts"
     config.vm.provision :shell, inline: "echo '#{config_macos_ip} #{config_macos_fqdn}' >>/etc/hosts"
-    config.vm.provision :shell, inline: "echo '#{config_gitlab_ip} #{config_gitlab_fqdn}' >>/etc/hosts"
     config.vm.provision :shell, path: 'provision-mailhog.sh'
     config.vm.provision :shell, path: 'provision.sh'
     config.vm.provision :shell, path: 'provision-example-jobs.sh'
-    config.vm.provision :shell, path: 'provision-example-test-jenkins-gitlab-plugin.sh'
     config.vm.provision :reload
     config.vm.provision :shell, path: 'provision-summary.sh'
   end
@@ -54,7 +50,6 @@ Vagrant.configure('2') do |config|
     config.vm.hostname = config_ubuntu_fqdn
     config.vm.network :private_network, ip: config_ubuntu_ip, libvirt__forward_mode: 'route', libvirt__dhcp_enabled: false
     config.vm.provision :shell, inline: "echo '#{config_jenkins_ip} #{config_jenkins_fqdn}' >>/etc/hosts"
-    config.vm.provision :shell, inline: "echo '#{config_gitlab_ip} #{config_gitlab_fqdn}' >>/etc/hosts"
     config.vm.provision :shell, path: 'provision-ubuntu.sh'
   end
 
@@ -66,11 +61,13 @@ Vagrant.configure('2') do |config|
     config.vm.provider :virtualbox do |vb|
       vb.memory = 4096
     end
-    config.vm.box = 'windows-2019-amd64'
+
+    config.vm.box = "jborean93/WindowsServer2019"
+    config.vm.box_version = "0.6.0"
+    
     config.vm.hostname = 'windows'
     config.vm.network :private_network, ip: config_windows_ip, libvirt__forward_mode: 'route', libvirt__dhcp_enabled: false
     config.vm.provision :shell, inline: "echo '#{config_jenkins_ip} #{config_jenkins_fqdn}' | Out-File -Encoding ASCII -Append c:/Windows/System32/drivers/etc/hosts"
-    config.vm.provision :shell, inline: "echo '#{config_gitlab_ip} #{config_gitlab_fqdn}' | Out-File -Encoding ASCII -Append c:/Windows/System32/drivers/etc/hosts"
     config.vm.provision :shell, inline: "$env:chocolateyVersion='0.10.11'; iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex", name: "Install Chocolatey"
     config.vm.provision :shell, path: 'windows/ps.ps1', args: 'provision-dotnet.ps1'
     config.vm.provision :reload
@@ -85,12 +82,16 @@ Vagrant.configure('2') do |config|
     config.vm.provider :virtualbox do |vb|
       vb.memory = 4096
     end
-    config.vm.box = 'macOS'
+    config.vm.box = "ashiq/osx-10.14"
+    config.vm.box_version = "0.1"
     config.vm.hostname = config_macos_fqdn
     config.vm.network :private_network, ip: config_macos_ip, libvirt__forward_mode: 'route', libvirt__dhcp_enabled: false
     config.vm.provision :shell, inline: "echo '#{config_jenkins_ip} #{config_jenkins_fqdn}' >>/etc/hosts"
-    config.vm.provision :shell, inline: "echo '#{config_gitlab_ip} #{config_gitlab_fqdn}' >>/etc/hosts"
     config.vm.provision :shell, path: 'provision-macos.sh', privileged: false
+    # Fixes: https://github.com/hashicorp/vagrant/issues/7999
+    config.vm.synced_folder '.', '/vagrant', type: "rsync",
+      rsync__exclude: ".git/",
+      rsync__chown: false
   end
 
   config.trigger.before :up do |trigger|
@@ -99,8 +100,6 @@ Vagrant.configure('2') do |config|
       inline: '''bash -euc \'
 certs=(
   ../windows-domain-controller-vagrant/tmp/ExampleEnterpriseRootCA.der
-  ../gitlab-vagrant/tmp/gitlab.example.com-crt.der
-  ../gitlab-vagrant/tmp/gitlab-jenkins-impersonation-token.txt
 )
 for cert_path in "${certs[@]}"; do
   if [ -f $cert_path ]; then
@@ -113,16 +112,10 @@ done
     }
   end
 
-  config.trigger.before :up do |trigger|
-    trigger.only_on = 'macos'
-    trigger.run = {inline: "echo 'You first need to download Xcode_8.1.xip from https://developer.apple.com/download/more/'; exit 1"} unless File.file?('Xcode_8.1.xip') || File.file?('Xcode_8.1.cpio.xz')
-  end
 
   config.trigger.after :up do |trigger|
     trigger.only_on = 'macos'
     trigger.run = {inline: "sh -c \"vagrant ssh -c 'cat /vagrant/tmp/#{config_macos_fqdn}.ssh_known_hosts' macos >tmp/#{config_macos_fqdn}.ssh_known_hosts\""}
-    trigger.run = {inline: "sh -c \"vagrant ssh -c 'cat /vagrant/Xcode_8.1.cpio.xz' macos >Xcode_8.1.cpio.xz.tmp && mv Xcode_8.1.cpio.xz{.tmp,}\""} unless File.file? 'Xcode_8.1.cpio.xz'
-    trigger.run = {inline: "sh -c \"vagrant ssh -c 'cat /vagrant/Xcode_8.1.cpio.xz.shasum' macos >Xcode_8.1.cpio.xz.shasum.tmp && mv Xcode_8.1.cpio.xz.shasum{.tmp,}\""} unless File.file? 'Xcode_8.1.cpio.xz.shasum'
   end
 
   config.trigger.after :up do |trigger|
