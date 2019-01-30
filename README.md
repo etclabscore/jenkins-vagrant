@@ -4,10 +4,8 @@ This configures Jenkins through [CLI/JNLP](https://wiki.jenkins-ci.org/display/J
 
 * Enable the simple `Logged-in users can do anything` Authorization security policy.
 * Add a SSH public key to `vagrant` user account and use it to access the CLI.
-* Optionally use LDAP user authentication.
 * Add and list users.
 * Install and configure plugins.
-* Setup GitLab integration (assumes [rgl/gitlab-vagrant](https://github.com/rgl/gitlab-vagrant) is already deployed)
 * Setup nginx as a Jenkins HTTPS proxy and static file server.
 * Create Freestyle project job.
 * Create Pipeline job.
@@ -24,24 +22,30 @@ These are the machines and how they are connected with each other:
 <img src="diagram.png">
 
 
+# Requirements
+
+`virtualbox` and `vagrant` and `virtualbox-extension-pack` are the dependencies for this repository.
+If you are on OSX you can get them via [brew](https://github.com/Homebrew/brew) and [brew cask](https://github.com/Homebrew/homebrew-cask):
+
+## OSX Installations Instructions:
+
+`brew cask install virtualbox`
+
+`brew cask install vagrant`
+
+`brew cask install virtualbox-extension-pack`
+
+### Note about Virtualbox Installation:
+
+Installing virtualbox requires you to allow `Oracle America, Inc` in `System Preferences > Security & Privacy` in order to finish the installation. More information can be found [here](http://osxdaily.com/2018/12/31/install-run-virtualbox-macos-install-kernel-fails/).
+
 # Usage
-
-Build and install the [Ubuntu Base Box](https://github.com/rgl/ubuntu-vagrant).
-
-Build and install the [Windows 2019 Base Box](https://github.com/rgl/windows-2016-vagrant).
-
-Build and install the [macOS Base Box](https://github.com/rgl/macos-vagrant).
 
 Add the following entry to your `/etc/hosts` file:
 
 ```
 10.10.10.100 jenkins.example.com
 ```
-
-If you want to use LDAP for user authentication, you have to:
-
-1. have [rgl/windows-domain-controller-vagrant](https://github.com/rgl/windows-domain-controller-vagrant) up and running at `../windows-domain-controller-vagrant`.
-1. uncomment the `config_authentication='ldap'` line inside [provision.sh](provision.sh). 
 
 Run `vagrant up jenkins` to launch the master. See its output to known how to login at the
 [local Jenkins home page](https://jenkins.example.com) as `admin` (you can also login with
@@ -53,52 +57,11 @@ Run `vagrant up ubuntu` to launch the Ubuntu slave.
 
 Run `vagrant up windows` to launch the Windows slave.
 
-Run `vagrant up macos` to launch the macOS slave. **NB** you first need to download [Xcode_8.1.xip](https://developer.apple.com/download/more/).
-After provisioning you can delete it, as `Xcode_8.1.cpio.xz` will take its place as a more efficient way to install Xcode.
+Run `vagrant up macos` to launch the macOS slave.
 
 Email notifications are sent to a local [MailHog](https://github.com/mailhog/MailHog) SMTP server running at localhost:1025 and you can browse them at [http://jenkins.example.com:8025](http://jenkins.example.com:8025).
-
-
-# Groovy Snippets
-
-## Show Object Properties
-
-```groovy
-def getObjectProperties(obj) {
-    def filtered = ['class', 'active']
-
-    properties = obj.metaClass.properties
-        .findAll {it.name != 'class' && it.name != 'metaClass'}
-        .inject([:]) {acc, e -> acc[e.name] = e.getProperty(obj); acc}
-
-    properties
-        .sort {it.key}
-        .collect {it}
-        .findAll {!filtered.contains(it.key)}
-        .join('\n')
-}
-
-project = Jenkins.instance.getItem('MailBounceDetector-multibranch-pipeline')
-getObjectProperties(project)
-```
-
-## Create Api Token
-
-```groovy
-// create an user api token.
-// see http://javadoc.jenkins-ci.org/hudson/model/User.html
-// see http://javadoc.jenkins-ci.org/jenkins/security/ApiTokenProperty.html
-// see https://jenkins.io/doc/book/managing/cli/
-import hudson.model.User
-import jenkins.security.ApiTokenProperty
-
-u = User.getById('alice.doe', false)
-p = u.getProperty(ApiTokenProperty)
-t = p.tokenStore.generateNewToken('token-name')
-u.save()
-println t.plainValue
-```
 
 # Reference
 
 * [Jenkins Handbook](https://jenkins.io/doc/book/)
+* [rgl/jenkins-vagrant](https://github.com/rgl/jenkins-vagrant)
