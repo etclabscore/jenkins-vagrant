@@ -47,7 +47,7 @@ Add the following entry to your `/etc/hosts` file:
 10.10.10.100 jenkins.example.com
 ```
 
-Run `vagrant up jenkins` to launch the master. See its output to known how to login at the
+Run `vagrant up jenkins` to launch the master. See its output to learn how to login at the
 [local Jenkins home page](https://jenkins.example.com) as `admin` (you can also login with
 one of the example accounts, e.g. `alice.doe` and password `password`).
 
