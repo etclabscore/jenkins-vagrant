@@ -361,7 +361,8 @@ def install(id) {
     'xcode-plugin',
     'xunit',
     'conditional-buildstep',
-    'workflow-aggregator', // aka Pipeline; see https://plugins.jenkins.io/workflow-aggregator
+    'workflow-aggregator',
+    'blueocean',
 ].each {
   install(it)
 }
