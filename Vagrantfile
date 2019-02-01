@@ -112,14 +112,34 @@ done
     }
   end
 
+  config.trigger.after :destroy do |trigger|
+    trigger.only_on = 'macos'
+    trigger.run = {inline: "sh -c 'rm  -f tmp/#{config_macos_fqdn}.ssh_known_hosts'"}
+  end
+
+  config.trigger.after :destroy do |trigger|
+    trigger.only_on = 'jenkins'
+    trigger.run = {inline: "sh -c 'rm  -f tmp/#{config_jenkins_fqdn}.ssh_known_hosts'"}
+  end
+
+  config.trigger.after :destroy do |trigger|
+    trigger.only_on = 'ubuntu'
+    trigger.run = {inline: "sh -c 'rm -f tmp/#{config_ubuntu_fqdn}.ssh_known_hosts'"}
+  end
+
+  config.trigger.after :destroy do |trigger|
+    trigger.only_on = 'windows'
+    trigger.run = {inline: "sh -c 'rm -f tmp/#{config_windows_fqdn}.ssh_known_hosts'"}
+  end
+
 
   config.trigger.after :up do |trigger|
     trigger.only_on = 'macos'
     trigger.run = {inline: "sh -c \"vagrant ssh -c 'cat /vagrant/tmp/#{config_macos_fqdn}.ssh_known_hosts' macos >tmp/#{config_macos_fqdn}.ssh_known_hosts\""}
   end
 
-  config.trigger.after :up do |trigger|
+  config.trigger.after :up, :destroy do |trigger|
     trigger.only_on = ['ubuntu', 'windows', 'macos']
-    trigger.run = {inline: "vagrant ssh -c 'cat /vagrant/tmp/*.ssh_known_hosts | sudo tee /etc/ssh/ssh_known_hosts' jenkins"}
+    trigger.run = {inline: "vagrant ssh -c 'cat /vagrant/tmp/*.ssh_known_hosts | sudo tee /etc/ssh/ssh_known_hosts 2>&1' jenkins "}
   end
 end
