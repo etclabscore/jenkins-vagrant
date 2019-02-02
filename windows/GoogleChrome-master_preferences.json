@@ -27,8 +27,6 @@
   },
   "first_run_tabs": [
     "chrome://extensions",
-    "chrome://version",
-    "https://github.com/rgl",
-    "https://ruilopes.com"
+    "chrome://version"
   ]
 }
