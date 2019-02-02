@@ -1,4 +1,14 @@
-This is a [Vagrant](https://www.vagrantup.com/) Environment for a Continuous Integration server using the [Jenkins](https://jenkins.io) daemon.
+NOTE: This is a fork of [rgl/jenkins-vagrant](https://github.com/rgl/jenkins-vagrant), modified to not include gitlab or require custom vagrant boxes.
+
+# Jenkins Vagrant
+
+This is a [Vagrant](https://www.vagrantup.com/) Environment for a Continuous Integration server using the [Jenkins](https://jenkins.io) daemon. It includes support for all major operating systems (Mac, Windows, Linux).
+
+## For the Non-Developer
+
+Jenkins Vagrant is an easy way for projects to test, build, and deploy their code without the need of any 3rd party service.
+
+## What is this?
 
 This configures Jenkins through [CLI/JNLP](https://wiki.jenkins-ci.org/display/JENKINS/Jenkins+CLI) and [Groovy](http://www.groovy-lang.org/) scripts to:
 
@@ -22,7 +32,7 @@ These are the machines and how they are connected with each other:
 <img src="diagram.png">
 
 
-# Requirements
+# Install
 
 `virtualbox` and `vagrant` and `virtualbox-extension-pack` are the dependencies for this repository.
 If you are on OSX you can get them via [brew](https://github.com/Homebrew/brew) and [brew cask](https://github.com/Homebrew/homebrew-cask):

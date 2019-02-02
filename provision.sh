@@ -125,15 +125,6 @@ popd
 
 
 #
-# trust the gitlab-vagrant environment certificate.
-
-if [ -f /vagrant/tmp/gitlab.example.com-crt.der ]; then
-    openssl x509 \
-        -inform der \
-        -in /vagrant/tmp/gitlab.example.com-crt.der \
-        -out /usr/local/share/ca-certificates/gitlab.example.com.crt
-    update-ca-certificates
-fi
 
 
 #
@@ -355,10 +346,8 @@ def install(id) {
 [
     'cloudbees-folder',
     'email-ext',
-    'gitlab-plugin',
     'git',
     'powershell',
-    'xcode-plugin',
     'xunit',
     'conditional-buildstep',
     'workflow-aggregator',
