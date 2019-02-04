@@ -35,7 +35,7 @@ These are the machines and how they are connected with each other:
 # Install
 
 `virtualbox` and `vagrant` and `virtualbox-extension-pack` are the dependencies for this repository.
-If you are on OSX you can get them via [brew](https://github.com/Homebrew/brew) and [brew cask](https://github.com/Homebrew/homebrew-cask):
+OSX users can get them via [brew](https://github.com/Homebrew/brew) and [brew cask](https://github.com/Homebrew/homebrew-cask):
 
 ## OSX Installations Instructions:
 
