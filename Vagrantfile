@@ -55,11 +55,11 @@ Vagrant.configure('2') do |config|
 
   config.vm.define :windows do |config|
     config.vm.provider :libvirt do |lv, config|
-      lv.memory = 4096
+      lv.memory = 2048
       config.vm.synced_folder '.', '/vagrant', type: 'smb', smb_username: ENV['USER'], smb_password: ENV['VAGRANT_SMB_PASSWORD']
     end
     config.vm.provider :virtualbox do |vb|
-      vb.memory = 4096
+      vb.memory = 2048
     end
 
     config.vm.box = "jborean93/WindowsServer2019"
@@ -80,7 +80,7 @@ Vagrant.configure('2') do |config|
 
   config.vm.define :macos do |config|
     config.vm.provider :virtualbox do |vb|
-      vb.memory = 4096
+      vb.memory = 2048
     end
     config.vm.box = "ashiq/osx-10.14"
     config.vm.box_version = "0.1"
