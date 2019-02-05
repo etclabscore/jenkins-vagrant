@@ -78,41 +78,36 @@ curl https://$config_jenkins_master_fqdn/jnlpJars/slave.jar --cacert /vagrant/tm
 popd
 SUDO_EOF
 
-
 #
 # create artifacts that need to be shared with the other nodes.
 
-
 sudo bash <<SUDO_EOF
 set -eux
-echo "debug: showkeys"
 find /etc/ssh -name 'ssh_host_*_key.pub' -exec bash -c "(echo -n '$config_fqdn '; cat {})" \;
-echo "attempt to write to /vagrant/tmp"
 find /etc/ssh -name 'ssh_host_*_key.pub' -exec bash -c "(echo -n '$config_fqdn '; cat {})" \; > /vagrant/tmp/$config_fqdn.ssh_known_hosts
-cat /vagrant/tmp/$config_fqdn.ssh_known_hosts
 SUDO_EOF
 
 #
-# install homebrew.
+# fix homebrew install
 
-ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" </dev/null
-#brew analytics off
+sudo bash <<SUDO_EOF
+mkdir -p /usr/local/include
+sudo chown -R jenkins $(brew --prefix)/*
+SUDO_EOF
+
 #
-# install dependencies.
+# install java
 
+sudo -u jenkins bash <<SUDO_EOF
+export HOMEBREW_CACHE=/Users/jenkins/Library/Homebrew/Cache
+echo 'export HOMEBREW_CACHE=/Users/jenkins/Library/Homebrew/Cache' >> /Users/jenkins/.bash_profile
 brew cask install java
+SUDO_EOF
 
 
 #
-# show summary.
+# results
 
-system_profiler SPSoftwareDataType
-sw_vers
+sudo bash <<SUDO_EOF
 uname -a
-swift -version
-java -version
-python --version
-ruby --version
-git --version
-brew config
-df -h /
+SUDO_EOF
