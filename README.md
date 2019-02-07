@@ -69,8 +69,6 @@ Run `vagrant up windows` to launch the Windows slave.
 
 Run `vagrant up macos` to launch the macOS slave.
 
-Email notifications are sent to a local [MailHog](https://github.com/mailhog/MailHog) SMTP server running at localhost:1025 and you can browse them at [http://jenkins.example.com:8025](http://jenkins.example.com:8025).
-
 # Reference
 
 * [Jenkins Handbook](https://jenkins.io/doc/book/)

@@ -3,8 +3,20 @@ param(
     [string]$config_jenkins_master_fqdn = 'jenkins.example.com',
 
     [Parameter(Mandatory=$true)]
-    [string]$config_fqdn = 'windows.jenkins.example.com'
+    [string]$config_fqdn = 'windows.jenkins.example.com',
+
+    [Parameter(Mandatory=$true)]
+    [string]$config_jenkins_master_ip = '10.10.10.100',
+
+    [Parameter(Mandatory=$true)]
+    [string]$config_ip = '10.10.10.102'
 )
+
+write-output ""
+write-output "config_jenkins_master_fqdn: $config_jenkins_master_fqdn"
+write-output "config_fqdn: $config_fqdn"
+write-output "config_ip: $config_ip"
+write-output "config_jenkins_master_ip: $config_jenkins_master_ip"
 
 # install git and related applications.
 choco install -y git --params '/GitOnlyOnPath /NoAutoCrlf /SChannel'
@@ -14,16 +26,6 @@ choco install -y meld
 # update $env:PATH with the recently installed Chocolatey packages.
 Import-Module "$env:ChocolateyInstall\helpers\chocolateyInstaller.psm1"
 Update-SessionEnvironment
-
-# install testing tools.
-choco install -y xunit
-choco install -y reportgenerator.portable
-# NB we need to install a recent (non-released) version due
-#    to https://github.com/OpenCover/opencover/issues/736
-Push-Location opencover-rgl.portable
-choco pack
-choco install -y opencover-rgl.portable -Source $PWD
-Pop-Location
 
 # install troubeshooting tools.
 choco install -y procexp
@@ -37,10 +39,6 @@ Install-ChocolateyShortcut `
     -ShortcutFilePath 'C:\Users\All Users\Microsoft\Windows\Start Menu\Programs\Process Monitor.lnk' `
     -TargetPath 'C:\ProgramData\chocolatey\lib\procmon\tools\procmon.exe'
 
-# import the Jenkins master site https certificate into the local machine trust store.
-Import-Certificate `
-    -FilePath C:/vagrant/tmp/$config_jenkins_master_fqdn-crt.der `
-    -CertStoreLocation Cert:/LocalMachine/Root
 
 # install the JRE.
 choco install -y server-jre8
@@ -113,35 +111,19 @@ $acl.SetAccessRuleProtection($true, $false)
 $jenkinsDirectory.SetAccessControl($acl)
 
 # download the slave jar and install it.
+$config_jenkins_url = $config_jenkins_master_ip + ':8080'
+$config_jenkins_slave_url = "http://$config_jenkins_url/jnlpJars/slave.jar"
+write-output "config_jenkins_url: $config_jenkins_url"
+write-output "config_jenkins_slave_url: $config_jenkins_slave_url"
+
 mkdir $jenkinsDirectory\lib | Out-Null
-Invoke-WebRequest "https://$config_jenkins_master_fqdn/jnlpJars/slave.jar" -OutFile $jenkinsDirectory\lib\slave.jar
+Invoke-WebRequest $config_jenkins_slave_url -OutFile $jenkinsDirectory\lib\slave.jar
 
 # create artifacts that need to be shared with the other nodes.
 mkdir -Force C:\vagrant\tmp | Out-Null
 [IO.File]::WriteAllText(
     "C:\vagrant\tmp\$config_fqdn.ssh_known_hosts",
-    (dir 'C:\ProgramData\ssh\ssh_host_*_key.pub' | %{ "$config_fqdn $(Get-Content $_)`n" }) -join ''
+    (dir 'C:\ProgramData\ssh\ssh_host_*_key.pub' | %{ "$config_ip $(Get-Content $_)`n" }) -join ''
 )
 
-# add default desktop shortcuts (called from a provision-base.ps1 generated script).
-[IO.File]::WriteAllText(
-    "$env:USERPROFILE\ConfigureDesktop-Jenkins.ps1",
-@'
-[IO.File]::WriteAllText(
-    "$env:USERPROFILE\Desktop\Jenkins Master.url",
-    @"
-[InternetShortcut]
-URL=https://{0}
-"@)
-'@ -f $config_jenkins_master_fqdn)
-
-# show installation summary.
-function Write-Title($title) {
-    Write-Host "`n#`n# $title`n"
-}
-Write-Title 'Installed DotNet version'
-Write-Host (Get-DotNetVersion)
-Write-Title 'Installed MSBuild version'
-MSBuild -version
-Write-Title 'Installed chocolatey packages'
 choco list -l

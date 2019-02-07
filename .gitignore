@@ -1,4 +1,7 @@
 .vagrant/
+.terraform/
+terraform*
+.terraform*
 tmp/
 *.xip
 *.cpio.xz*

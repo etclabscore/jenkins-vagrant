@@ -28,7 +28,7 @@ EOF
 
 echo "================================================================"
 echo ""
-echo "jenkins is installed at https://$domain"
+echo "jenkins is installed at https://$domain:8080"
 echo "the admin password is $(cat /var/lib/jenkins/secrets/initialAdminPassword)"
 echo "you can also use the vagrant user with the vagrant password"
 echo ""
