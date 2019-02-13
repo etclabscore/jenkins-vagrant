@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eux
 
-domain=$(hostname --fqdn)
+domain='jenkins.example.com'
 
 echo 'Defaults env_keep += "DEBIAN_FRONTEND"' >/etc/sudoers.d/env_keep_apt
 chmod 440 /etc/sudoers.d/env_keep_apt
@@ -41,26 +41,9 @@ systemctl restart systemd-journald
 
 
 #
-# install vim.
-
-apt-get install -y --no-install-recommends vim
-
-cat >~/.vimrc <<'EOF'
-syntax on
-set background=dark
-set esckeys
-set ruler
-set laststatus=2
-set nobackup
-EOF
-
-
-#
 # configure the shell.
 
 cat >~/.bash_history <<'EOF'
-systemctl status nginx
-systemctl restart nginx
 systemctl status jenkins
 systemctl restart jenkins
 less /var/log/jenkins/jenkins.log
@@ -73,133 +56,9 @@ sudo -sHu jenkins
 EOF
 
 cat >~/.bashrc <<'EOF'
-# If not running interactively, don't do anything
-[[ "$-" != *i* ]] && return
-
-export EDITOR=vim
-export PAGER=less
-
-alias l='ls -lF --color'
-alias ll='l -a'
-alias h='history 25'
-alias j='jobs -l'
 alias jcli="java -jar /var/cache/jenkins/war/WEB-INF/jenkins-cli.jar -s http://localhost:8080 -http -auth @$HOME/.jenkins-cli"
 alias jgroovy='jcli groovy'
 EOF
-
-cat >~/.inputrc <<'EOF'
-"\e[A": history-search-backward
-"\e[B": history-search-forward
-"\eOD": backward-word
-"\eOC": forward-word
-set show-all-if-ambiguous on
-set completion-ignore-case on
-EOF
-
-
-#
-# create a self-signed certificate.
-
-pushd /etc/ssl/private
-openssl genrsa \
-    -out $domain-keypair.pem \
-    2048 \
-    2>/dev/null
-chmod 400 $domain-keypair.pem
-openssl req -new \
-    -sha256 \
-    -subj "/CN=$domain" \
-    -key $domain-keypair.pem \
-    -out $domain-csr.pem
-openssl x509 -req -sha256 \
-    -signkey $domain-keypair.pem \
-    -extensions a \
-    -extfile <(echo "[a]
-        subjectAltName=DNS:$domain
-        extendedKeyUsage=serverAuth
-        ") \
-    -days 365 \
-    -in  $domain-csr.pem \
-    -out $domain-crt.pem
-popd
-
-
-#
-
-
-#
-# install nginx as a proxy to Jenkins.
-
-apt-get install -y --no-install-recommends nginx
-cat >/etc/nginx/sites-available/jenkins <<EOF
-ssl_session_cache shared:SSL:4m;
-ssl_session_timeout 6h;
-#ssl_stapling on;
-#ssl_stapling_verify on;
-server {
-    listen 80;
-    server_name _;
-    return 301 https://$domain\$request_uri;
-}
-server {
-    listen 443 ssl http2;
-    server_name $domain;
-    client_max_body_size 50m;
-
-    ssl_certificate /etc/ssl/private/$domain-crt.pem;
-    ssl_certificate_key /etc/ssl/private/$domain-keypair.pem;
-    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
-    # see https://github.com/cloudflare/sslconfig/blob/master/conf
-    # see https://blog.cloudflare.com/it-takes-two-to-chacha-poly/
-    # see https://blog.cloudflare.com/do-the-chacha-better-mobile-performance-with-cryptography/
-    # NB even though we have CHACHA20 here, the OpenSSL library that ships with Ubuntu 16.04 does not have it. so this is a nop. no problema.
-    ssl_ciphers EECDH+CHACHA20:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!aNULL:!MD5;
-    add_header Strict-Transport-Security "max-age=31536000; includeSubdomains";
-
-    # workaround for https://issues.jenkins-ci.org/browse/JENKINS-45651
-    add_header 'X-SSH-Endpoint' 'jenkins.example.com:50022' always;
-
-    access_log /var/log/nginx/$domain-access.log;
-    error_log /var/log/nginx/$domain-error.log;
-
-
-    # uncomment the following to debug errors and rewrites.
-    #error_log /var/log/nginx/$domain-error.log debug;
-    #rewrite_log on;
-
-    location ~ "(/\\.|/\\w+-INF|\\.class\$)" {
-        return 404;
-    }
-
-    location ~ "^/static/[0-9a-f]{8}/plugin/(.+/.+)" {
-        alias /var/lib/jenkins/plugins/\$1;
-    }
-
-    location ~ "^/static/[0-9a-f]{8}/(.+)" {
-        rewrite "^/static/[0-9a-f]{8}/(.+)" /\$1 last;
-    }
-
-    location /userContent/ {
-        root /var/lib/jenkins;
-    }
-
-    location / {
-        root /var/cache/jenkins/war;
-        try_files \$uri @jenkins;
-    }
-
-    location @jenkins {
-        proxy_pass http://127.0.0.1:8080;
-        proxy_redirect default;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-EOF
-rm /etc/nginx/sites-enabled/default
-ln -s ../sites-available/jenkins /etc/nginx/sites-enabled/jenkins
-systemctl restart nginx
 
 
 #
@@ -250,7 +109,7 @@ xmlstarlet edit --inplace -u '/hudson/installStateName' -v 'RUNNING' config.xml
 # see https://github.com/jenkinsci/jenkins/blob/jenkins-2.138.2/core/src/main/java/hudson/model/Slave.java#L722
 sed -i -E 's,^(JAVA_ARGS="-.+),\1\nJAVA_ARGS="$JAVA_ARGS -Dhudson.model.Slave.workspaceRoot=w",' /etc/default/jenkins
 # bind to localhost.
-sed -i -E 's,^(JENKINS_ARGS="-.+),\1\nJENKINS_ARGS="$JENKINS_ARGS --httpListenAddress=127.0.0.1",' /etc/default/jenkins
+sed -i -E 's,^(JENKINS_ARGS="-.+),\1\nJENKINS_ARGS="$JENKINS_ARGS --httpListenAddress=0.0.0.0",' /etc/default/jenkins
 # configure access log.
 # NB this is useful for testing whether static files are really being handled by nginx.
 sed -i -E 's,^(JENKINS_ARGS="-.+),\1\nJENKINS_ARGS="$JENKINS_ARGS --accessLoggerClassName=winstone.accesslog.SimpleAccessLogger --simpleAccessLogger.format=combined --simpleAccessLogger.file=/var/log/jenkins/access.log",' /etc/default/jenkins
@@ -285,17 +144,6 @@ Jenkins.instance.numExecutors = 0
 Jenkins.instance.mode = Mode.EXCLUSIVE
 
 Jenkins.instance.save()
-EOF
-
-# set the jenkins url and administrator email.
-# see http://javadoc.jenkins-ci.org/jenkins/model/JenkinsLocationConfiguration.html
-jgroovy = <<EOF
-import jenkins.model.JenkinsLocationConfiguration
-
-c = JenkinsLocationConfiguration.get()
-c.url = 'https://$domain'
-c.adminAddress = 'Jenkins <jenkins@example.com>'
-c.save()
 EOF
 
 # install and configure git.
@@ -344,13 +192,8 @@ def install(id) {
 }
 
 [
-    'cloudbees-folder',
-    'email-ext',
     'git',
     'powershell',
-    'xunit',
-    'conditional-buildstep',
-    'workflow-aggregator',
     'blueocean',
 ].each {
   install(it)
@@ -361,17 +204,6 @@ while [[ -n "$(install-plugins)" ]]; do
     systemctl restart jenkins
     bash -c 'while ! wget -q --spider http://localhost:8080/cli; do sleep 1; done;'
 done
-
-# use the local SMTP MailHog server.
-jgroovy = <<'EOF'
-import jenkins.model.Jenkins
-
-c = Jenkins.instance.getDescriptor('hudson.tasks.Mailer')
-c.smtpHost = 'localhost'
-c.smtpPort = '1025'
-c.save()
-EOF
-
 
 #
 # configure security.
@@ -402,7 +234,6 @@ Jenkins.instance.securityRealm = new HudsonPrivateSecurityRealm(false)
 
 u = Jenkins.instance.securityRealm.createAccount('vagrant', 'vagrant')
 u.fullName = 'Vagrant'
-u.addProperty(new Mailer.UserProperty('vagrant@example.com'))
 u.save()
 
 Jenkins.instance.authorizationStrategy = new FullControlOnceLoggedInAuthorizationStrategy(
@@ -451,8 +282,6 @@ EOF
 mkdir -p /vagrant/tmp
 pushd /vagrant/tmp
 cp /var/lib/jenkins/.ssh/id_rsa.pub $domain-ssh-rsa.pub
-cp /etc/ssl/private/$domain-crt.pem .
-openssl x509 -outform der -in $domain-crt.pem -out $domain-crt.der
 popd
 
 
@@ -471,7 +300,7 @@ import hudson.slaves.CommandLauncher
 node = new DumbSlave(
     "ubuntu",
     "/var/jenkins",
-    new CommandLauncher("ssh ubuntu.jenkins.example.com /var/jenkins/bin/jenkins-slave"))
+    new CommandLauncher("ssh 10.10.10.101 /var/jenkins/bin/jenkins-slave"))
 node.numExecutors = 3
 node.labelString = "ubuntu 18.04 linux amd64"
 Jenkins.instance.nodesObject.addNode(node)
@@ -490,9 +319,9 @@ import hudson.slaves.CommandLauncher
 node = new DumbSlave(
     "windows",
     "c:/j",
-    new CommandLauncher("ssh windows.jenkins.example.com java -jar c:/j/lib/slave.jar"))
+    new CommandLauncher("ssh 10.10.10.102 java -jar c:/j/lib/slave.jar"))
 node.numExecutors = 3
-node.labelString = "windows 2016 vs2017 amd64"
+node.labelString = "windows server 2019"
 Jenkins.instance.nodesObject.addNode(node)
 Jenkins.instance.nodesObject.save()
 EOF
@@ -509,9 +338,17 @@ import hudson.slaves.CommandLauncher
 node = new DumbSlave(
     "macos",
     "/var/jenkins",
-    new CommandLauncher("ssh macos.jenkins.example.com /var/jenkins/bin/jenkins-slave"))
+    new CommandLauncher("ssh 10.10.10.103 /var/jenkins/bin/jenkins-slave"))
 node.numExecutors = 3
-node.labelString = "macos 10.12 amd64"
+node.labelString = "macos 10.14 Mojave"
 Jenkins.instance.nodesObject.addNode(node)
 Jenkins.instance.nodesObject.save()
 EOF
+
+
+# remove insecure vagrant user
+#jgroovy = <<'EOF'
+#import hudson.model.User
+#u = User.current()
+#u.delete()
+#EOF
