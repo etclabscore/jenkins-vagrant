@@ -49,12 +49,41 @@ OSX users can get them via [brew](https://github.com/Homebrew/brew) and [brew ca
 
 Installing virtualbox requires you to allow `Oracle America, Inc` in `System Preferences > Security & Privacy` in order to finish the installation. More information can be found [here](http://osxdaily.com/2018/12/31/install-run-virtualbox-macos-install-kernel-fails/).
 
-# Usage
 
-Add the following entry to your `/etc/hosts` file:
+## Ubuntu Installation Instructions:
+
+Virtualbox:
 
 ```
-10.10.10.100 jenkins.example.com
+sudo apt-add-repository "deb http://download.virtualbox.org/virtualbox/debian $(lsb_release -sc) contrib"
+wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | sudo apt-key add -
+sudo apt-get update
+sudo apt-get install virtualbox -y
+```
+
+Vagrant:
+
+```
+wget https://releases.hashicorp.com/vagrant/2.2.3/vagrant_2.2.3_linux_amd64.zip
+unzip vagrant_2.2.3_linux_amd64.zip
+sudo mv vagrant /usr/local/bin/
+```
+
+Virtualbox Extension Pack:
+
+```
+LatestVirtualBoxVersion=$(wget -qO - http://download.virtualbox.org/virtualbox/LATEST-STABLE.TXT) && wget "http://download.virtualbox.org/virtualbox/${LatestVirtualBoxVersion}/Oracle_VM_VirtualBox_Extension_Pack-${LatestVirtualBoxVersion}.vbox-extpack"
+
+sudo VBoxManage extpack install --replace Oracle_VM_VirtualBox_Extension_Pack-${LatestVirtualBoxVersion}.vbox-extpack
+```
+> https://unix.stackexchange.com/questions/289685/how-to-install-virtualbox-extension-pack-to-virtualbox-latest-version-on-linux/290462
+
+# Usage
+
+Add `10.10.10.100 jenkins.example.com` to your `/etc/hosts` file. 
+
+```
+echo "10.10.10.100 jenkins.example.com" | sudo tee -a /etc/hosts
 ```
 
 Run `vagrant up jenkins` to launch the master. See its output to learn how to login at the
