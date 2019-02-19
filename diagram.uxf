@@ -1,21 +1,17 @@
 <diagram program="umletino" version="14.3.0"><zoom_level>10</zoom_level><element><id>UMLDeployment</id><coordinates><x>100</x><y>40</y><w>190</w><h>300</h></coordinates><panel_attributes>&lt;&lt;jenkins master&gt;&gt;
-jenkins.example.com
-(10.10.10.100)
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLDeployment</id><coordinates><x>460</x><y>50</y><w>260</w><h>80</h></coordinates><panel_attributes>&lt;&lt;jenkins slave&gt;&gt;
-ubuntu.jenkins.example.com
-(10.10.10.101)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLDeployment</id><coordinates><x>460</x><y>140</y><w>260</w><h>80</h></coordinates><panel_attributes>&lt;&lt;jenkins slave&gt;&gt;
-windows.jenkins.example.com
-(10.10.10.102)</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>280</x><y>90</y><w>120</w><h>50</h></coordinates><panel_attributes>lt=-(
+10.10.10.100
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLDeployment</id><coordinates><x>460</x><y>50</y><w>260</w><h>80</h></coordinates><panel_attributes>&lt;&lt;jenkins linux slave&gt;&gt;
+10.10.10.101</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLDeployment</id><coordinates><x>460</x><y>140</y><w>260</w><h>80</h></coordinates><panel_attributes>&lt;&lt;jenkins windows slave&gt;&gt;
+10.10.10.102</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>280</x><y>90</y><w>120</w><h>50</h></coordinates><panel_attributes>lt=-(
 </panel_attributes><additional_attributes>10;20;90;20</additional_attributes></element><element><id>Relation</id><coordinates><x>380</x><y>90</y><w>100</w><h>40</h></coordinates><panel_attributes>lt=()-
 r1=ssh
 </panel_attributes><additional_attributes>10;20;80;20</additional_attributes></element><element><id>Relation</id><coordinates><x>380</x><y>180</y><w>100</w><h>40</h></coordinates><panel_attributes>lt=()-
 r1=ssh
 </panel_attributes><additional_attributes>10;20;80;20</additional_attributes></element><element><id>Relation</id><coordinates><x>280</x><y>180</y><w>120</w><h>50</h></coordinates><panel_attributes>lt=-(
 </panel_attributes><additional_attributes>10;20;90;20</additional_attributes></element><element><id>Relation</id><coordinates><x>20</x><y>220</y><w>100</w><h>40</h></coordinates><panel_attributes>lt=()-
-r1=https
-</panel_attributes><additional_attributes>10;20;80;20</additional_attributes></element><element><id>UMLDeployment</id><coordinates><x>460</x><y>230</y><w>260</w><h>80</h></coordinates><panel_attributes>&lt;&lt;jenkins slave&gt;&gt;
-macos.jenkins.example.com
-(10.10.10.103)</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>380</x><y>270</y><w>100</w><h>40</h></coordinates><panel_attributes>lt=()-
+r1=http
+</panel_attributes><additional_attributes>10;20;80;20</additional_attributes></element><element><id>UMLDeployment</id><coordinates><x>460</x><y>230</y><w>260</w><h>80</h></coordinates><panel_attributes>&lt;&lt;jenkins macos slave&gt;&gt;
+10.10.10.103</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>380</x><y>270</y><w>100</w><h>40</h></coordinates><panel_attributes>lt=()-
 r1=ssh
 </panel_attributes><additional_attributes>10;20;80;20</additional_attributes></element><element><id>Relation</id><coordinates><x>280</x><y>270</y><w>120</w><h>50</h></coordinates><panel_attributes>lt=-(
-</panel_attributes><additional_attributes>10;20;90;20</additional_attributes></element><element><id>UMLClass</id><coordinates><x>140</x><y>170</y><w>100</w><h>30</h></coordinates><panel_attributes>nginx</panel_attributes><additional_attributes></additional_attributes></element></diagram>
+</panel_attributes><additional_attributes>10;20;90;20</additional_attributes></element></diagram>
