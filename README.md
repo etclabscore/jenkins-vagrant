@@ -16,7 +16,6 @@ This configures Jenkins through [CLI/JNLP](https://wiki.jenkins-ci.org/display/J
 * Add a SSH public key to `vagrant` user account and use it to access the CLI.
 * Add and list users.
 * Install and configure plugins.
-* Setup nginx as a Jenkins HTTPS proxy and static file server.
 * Create Freestyle project job.
 * Create Pipeline job.
 * Create Multibranch Pipeline job.
@@ -25,7 +24,7 @@ This configures Jenkins through [CLI/JNLP](https://wiki.jenkins-ci.org/display/J
   * With enabled long path support on the OS and chocolatey.
 * Add a macOS slave node.
 
-**NB** If you are new to Groovy, be sure to check the [Groovy Learn X in Y minutes page](https://learnxinyminutes.com/docs/groovy/).
+If you are new to Groovy, be sure to check the [Groovy Learn X in Y minutes page](https://learnxinyminutes.com/docs/groovy/).
 
 These are the machines and how they are connected with each other:
 
@@ -87,10 +86,7 @@ echo "10.10.10.100 jenkins.example.com" | sudo tee -a /etc/hosts
 ```
 
 Run `vagrant up jenkins` to launch the master. See its output to learn how to login at the
-[local Jenkins home page](https://jenkins.example.com) as `admin` (you can also login with
-one of the example accounts, e.g. `alice.doe` and password `password`).
-
-**NB** nginx is setup with a self-signed certificate that you have to trust before being able to access the local Jenkins home page.
+Jenkins home page as `admin`.
 
 Run `vagrant up ubuntu` to launch the Ubuntu slave.
 
