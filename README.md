@@ -79,12 +79,6 @@ sudo VBoxManage extpack install --replace Oracle_VM_VirtualBox_Extension_Pack-${
 
 # Usage
 
-Add `10.10.10.100 jenkins.example.com` to your `/etc/hosts` file. 
-
-```
-echo "10.10.10.100 jenkins.example.com" | sudo tee -a /etc/hosts
-```
-
 Run `vagrant up jenkins` to launch the master. See its output to learn how to login at the
 Jenkins home page as `admin`.
 
