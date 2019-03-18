@@ -65,6 +65,9 @@ git config --global push.default simple
 git config --global core.autocrlf false
 EOF
 
+#
+# install pkg-config and libssl-dev
+apt-get install -y pkg-config libssl-dev
 
 #
 # create artifacts that need to be shared with the other nodes.
