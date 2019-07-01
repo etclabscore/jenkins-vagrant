@@ -22,6 +22,11 @@ apt-get install -y openjdk-8-jre-headless
 
 
 #
+# install LLVM for evmjit builds
+apt-get install -y llvm-7 llvm-7-dev
+
+
+#
 # add the jenkins user.
 
 groupadd --system jenkins
